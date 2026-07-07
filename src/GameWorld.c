@@ -7,6 +7,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 
 #include "raylib/raylib.h"
@@ -60,6 +61,17 @@ void destroyGameWorld( GameWorld *gw ) {
  * @brief Reads user input and updates the state of the game.
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
+    
+    Vector2 mousePos = GetMousePosition();
+
+    for ( int i = 0; i < gw->hexCount; i++ ) {
+        Hex *h = &gw->hexGrid[i];
+        if ( checkCollisionPointHex( mousePos, h ) ) {
+            h->color = 0x00aa00ff;
+        } else {
+            h->color = 0x000000ff;
+        }
+    }
 
 }
 
@@ -71,11 +83,8 @@ void drawGameWorld( GameWorld *gw ) {
     BeginDrawing();
     ClearBackground( BLACK );
 
-    int xc = GetScreenWidth() / 2;
-    int yc = GetScreenHeight() / 2;
-
     drawHexGrid( gw->hexGrid, gw->hexCount, false );
-
+    
     EndDrawing();
 
 }

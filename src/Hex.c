@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdbool.h>
 #include <math.h>
 
 #include "raylib/raylib.h"
@@ -42,4 +43,31 @@ void drawHexGridConnections( Hex *hexGrid, int hexCount ) {
             }
         }
     }
+}
+
+bool checkCollisionPointHex( Vector2 point, Hex *h ) {
+
+    // divide the hex in 6 triangles to check
+    int angle = 30;
+    int angleInc = 60;
+
+    for ( int i = 0; i < 6; i++ ) {
+        Vector2 v1 = h->center;
+        Vector2 v2 = {
+            h->center.x + h->radius * 0.95f * cosf( DEG2RAD * angle ),
+            h->center.y + h->radius * 0.95f * sinf( DEG2RAD * angle ),
+        };
+        Vector2 v3 = {
+            h->center.x + h->radius * cosf( DEG2RAD * ( angle + angleInc ) ),
+            h->center.y + h->radius * sinf( DEG2RAD * ( angle + angleInc ) ),
+        };
+        if ( CheckCollisionPointTriangle( point, v3, v2, v1 ) ) {
+            return true;
+        }
+        angle += angleInc;
+        DrawTriangle( v3, v2, v1, RED );
+    }
+
+    return false;
+
 }
