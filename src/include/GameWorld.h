@@ -7,8 +7,11 @@
  */
 #pragma once
 
+#include "Hex.h"
+
 typedef struct GameWorld {
-    unsigned int grid[10][10];
+    Hex hexGrid[500];
+    int hexCount;
 } GameWorld;
 
 /**
