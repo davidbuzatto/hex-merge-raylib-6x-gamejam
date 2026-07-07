@@ -6,11 +6,16 @@
 
 #include "Hex.h"
 #include "Macros.h"
+#include "Utils.h"
+
+static void drawHexConnections( Hex *h );
+static void drawHexGridConnections( Hex *hexGrid, int hexCount, int hexPos );
 
 void initHex( Hex *h, Vector2 center, float radius ) {
 
     h->center = center;
     h->radius = radius;
+    h->apothem = apothem( h->radius );
     h->color = HEX_BLANK_COLOR;
 
     for ( int i = 0; i < 6; i++ ) {
@@ -38,18 +43,26 @@ void drawHexGrid( Hex *hexGrid, int hexCount, bool showConnections ) {
         drawHex( h );
     }
     if ( showConnections ) {
-        drawHexGridConnections( hexGrid, hexCount );
+        drawHexGridConnections( hexGrid, hexCount, 20 );
     }
 }
 
-void drawHexGridConnections( Hex *hexGrid, int hexCount ) {
-    for ( int i = 0; i < hexCount; i++ ) {
-        Hex *h = &hexGrid[i];
-        for ( int j = 0; j < 6; j++ ) {
-            Hex *t = h->neighbors[j];
-            if ( t != NULL ) {
-                DrawLineV( h->center, t->center, WHITE );
-            }
+static void drawHexConnections( Hex *h ) {
+    for ( int j = 0; j < 6; j++ ) {
+        Hex *t = h->neighbors[j];
+        if ( t != NULL ) {
+            DrawLineV( h->center, t->center, WHITE );
+        }
+    }
+}
+static void drawHexGridConnections( Hex *hexGrid, int hexCount, int hexPos ) {
+    if ( hexPos != -1 ) {
+        if ( hexPos >= 0 && hexPos < hexCount ) {
+            drawHexConnections( &hexGrid[hexPos] );
+        }
+    } else {
+        for ( int i = 0; i < hexCount; i++ ) {
+            drawHexConnections( &hexGrid[i] );
         }
     }
 }

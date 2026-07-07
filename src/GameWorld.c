@@ -32,18 +32,22 @@ static unsigned int pollColorQueue( void );
 static void offerColorQueue( unsigned int color );
 static void feedColorQueue( bool randomize, int colorLimitIndex );
 
+static void checkAndBlend( Hex *h );
+
 static void drawHud( GameWorld *gw );
 
 static Hex *mouseOverHex = NULL;
 static Hex mouseHoverDrawHex = {
     .center = { 0 },
     .radius = 0,
+    .apothem = 0,
     .color = 0,
     .neighbors = { 0 }
 };
 static Hex queueDrawHex = {
     .center = { 0 },
     .radius = 15,
+    .apothem = 0,
     .color = 0,
     .neighbors = { 0 }
 };
@@ -76,7 +80,8 @@ static int colorQueueSize = 0;
 
 static int gridId = 5;
 static ColorLimit colorLimit = COLOR_LIMIT_PRIMARY;
-static bool randomizeColorQueueFeeder = true;
+static bool randomizeColorQueueFeeder = false;
+static bool showHexConnections = true;
 
 /**
  * @brief Creates a dinamically allocated GameWorld struct instance.
@@ -125,6 +130,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
     if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
         if ( mouseOverHex != NULL && mouseOverHex->color == HEX_BLANK_COLOR ) {
             mouseOverHex->color = pollColorQueue();
+            checkAndBlend( mouseOverHex );
             feedColorQueue( randomizeColorQueueFeeder, (int) colorLimit );
         }
     }
@@ -139,13 +145,15 @@ void drawGameWorld( GameWorld *gw ) {
     BeginDrawing();
     ClearBackground( BLACK );
 
-    drawHexGrid( gw->hexGrid, gw->hexCount, false );
+    drawHexGrid( gw->hexGrid, gw->hexCount, showHexConnections );
 
     if ( mouseOverHex != NULL ) {
         mouseHoverDrawHex.center = mouseOverHex->center;
         mouseHoverDrawHex.radius = mouseOverHex->radius;
         drawHexHighlight( &mouseHoverDrawHex );
     }
+
+    //connectHexToNeighbors( &gw->hexGrid[20], gw->hexCount );
 
     drawHud( gw );
 
@@ -201,13 +209,13 @@ static void connectHexToNeighbors( Hex *source, int hexCount ) {
 
     for ( int p = 0; p < 6; p++ ) {
         Vector2 probe = {
-            source->center.x + ( source->radius * 2 ) * cosf( DEG2RAD * angle ),
-            source->center.y + ( source->radius * 2 ) * sinf( DEG2RAD * angle )
+            source->center.x + ( source->apothem * 2 ) * cosf( DEG2RAD * angle ),
+            source->center.y + ( source->apothem * 2 ) * sinf( DEG2RAD * angle )
         };
         for ( int t = 0; t < hexCount; t++ ) {
             Hex *target = &source[t];
             if ( source != target ) {
-                if ( CheckCollisionPointCircle( probe, target->center, 20 ) ) {
+                if ( CheckCollisionCircles( probe, 10, target->center, 10 ) ) {
                     source->neighbors[targetFoundCount++] = target;
                     break;
                 }
@@ -262,6 +270,20 @@ static void feedColorQueue( bool randomize, int colorLimitIndex ) {
         sequentialPos++;
     }
 
+}
+
+// TODO: needs to improve -> use DFS
+static void checkAndBlend( Hex *h ) {
+    for ( int i = 0; i < 6; i++ ) {
+        Hex *t = h->neighbors[i];
+        if ( t != NULL ) {
+            int blendColor = colorBlend( h->color, t->color );
+            if ( blendColor != HEX_BLANK_COLOR ) {
+                h->color = blendColor;
+                t->color = blendColor;
+            }
+        }
+    }
 }
 
 static void drawHud( GameWorld *gw ) {
