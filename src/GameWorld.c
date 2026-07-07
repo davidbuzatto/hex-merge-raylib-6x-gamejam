@@ -18,13 +18,65 @@
 #include "ResourceManager.h"
 #include "Utils.h"
 
+typedef enum ColorLimit {
+    COLOR_LIMIT_PRIMARY = 2,
+    COLOR_LIMIT_SECONDARY = 5,
+    COLOR_LIMIT_TERTIARY = 11
+} ColorLimit;
+
 static void createHexGrid( GameWorld *gw, int q, float radius );
-static void connextHexGrid( Hex *hexGrid, int hexCount );
+static void connectHexGrid( Hex *hexGrid, int hexCount );
 static void connectHexToNeighbors( Hex *hexGrid, int hexCount );
+
+static unsigned int pollColorQueue( void );
+static void offerColorQueue( unsigned int color );
+static void feedColorQueue( bool randomize, int colorLimitIndex );
+
+static void drawHud( GameWorld *gw );
+
+static Hex *mouseOverHex = NULL;
+static Hex mouseHoverDrawHex = {
+    .center = { 0 },
+    .radius = 0,
+    .color = 0,
+    .neighbors = { 0 }
+};
+static Hex queueDrawHex = {
+    .center = { 0 },
+    .radius = 15,
+    .color = 0,
+    .neighbors = { 0 }
+};
 
 static int gridQuantities[] = { 3, 5, 7, 9, 11, 13 };
 static int gridRadii[] = { 100, 60, 44, 36, 30, 26 };
-int gridId = 5;
+
+static unsigned int availableColors[] = {
+    // primary
+    HEX_RED,
+    HEX_YELLOW,
+    HEX_BLUE,
+    // secondary
+    HEX_ORANGE,
+    HEX_GREEN,
+    HEX_PURPLE,
+    // tertiary
+    HEX_RED_ORANGE, 
+    HEX_YELLOW_ORANGE, 
+    HEX_YELLOW_GREEN, 
+    HEX_BLUE_GREEN, 
+    HEX_BLUE_PURPLE, 
+    HEX_RED_PURPLE, 
+};
+
+static unsigned int colorQueue[COLOR_QUEUE_CAPACITY] = { 0 };
+static int colorQueueStart = -1;
+static int colorQueueEnd = -1;
+static int colorQueueSize = 0;
+
+static int gridId = 5;
+static ColorLimit colorLimit = COLOR_LIMIT_PRIMARY;
+static bool randomizeColorQueueFeeder = true;
 
 /**
  * @brief Creates a dinamically allocated GameWorld struct instance.
@@ -43,8 +95,14 @@ GameWorld *createGameWorld( void ) {
         );
     }*/
 
+    gridId = clampInt( gridId, 0, ( sizeof( gridQuantities ) / sizeof( gridQuantities[0] ) ) - 1 );
     createHexGrid( gw, gridQuantities[gridId], gridRadii[gridId] );
-    connextHexGrid( gw->hexGrid, gw->hexCount );
+    connectHexGrid( gw->hexGrid, gw->hexCount );
+    gw->score = 0;
+
+    for ( int i = 0; i < COLOR_QUEUE_CAPACITY; i++ ) {
+        feedColorQueue( randomizeColorQueueFeeder, (int) colorLimit );
+    }
 
     return gw;
 
@@ -62,14 +120,12 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
     
-    Vector2 mousePos = GetMousePosition();
+    mouseOverHex = getHexByPoint( gw->hexGrid, gw->hexCount, GetMousePosition() );
 
-    for ( int i = 0; i < gw->hexCount; i++ ) {
-        Hex *h = &gw->hexGrid[i];
-        if ( checkCollisionPointHex( mousePos, h ) ) {
-            h->color = 0x00aa00ff;
-        } else {
-            h->color = 0x000000ff;
+    if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
+        if ( mouseOverHex != NULL && mouseOverHex->color == HEX_BLANK_COLOR ) {
+            mouseOverHex->color = pollColorQueue();
+            feedColorQueue( randomizeColorQueueFeeder, (int) colorLimit );
         }
     }
 
@@ -84,7 +140,15 @@ void drawGameWorld( GameWorld *gw ) {
     ClearBackground( BLACK );
 
     drawHexGrid( gw->hexGrid, gw->hexCount, false );
-    
+
+    if ( mouseOverHex != NULL ) {
+        mouseHoverDrawHex.center = mouseOverHex->center;
+        mouseHoverDrawHex.radius = mouseOverHex->radius;
+        drawHexHighlight( &mouseHoverDrawHex );
+    }
+
+    drawHud( gw );
+
     EndDrawing();
 
 }
@@ -109,7 +173,9 @@ static void createHexGrid( GameWorld *gw, int centerLineQuantity, float radius )
         int offset = ( centerLineQuantity - lineQuantity ) * hApothem;
         for ( int j = 0; j < lineQuantity; j++ ) {
             Vector2 center = { startX + hApothem * 2 * j + offset, startY + vApothem * i };
-            initHex( &gw->hexGrid[gw->hexCount++], center, radius );
+            if ( gw->hexCount < MAX_HEX_GRID_COUNT ) {
+                initHex( &gw->hexGrid[gw->hexCount++], center, radius );
+            }
         }
         if ( decrease ) {
             lineQuantity--;
@@ -120,7 +186,7 @@ static void createHexGrid( GameWorld *gw, int centerLineQuantity, float radius )
 
 }
 
-static void connextHexGrid( Hex *hexGrid, int hexCount ) {
+static void connectHexGrid( Hex *hexGrid, int hexCount ) {
     for ( int i = 0; i < hexCount; i++ ) {
         connectHexToNeighbors( &hexGrid[i], hexCount );
     }
@@ -150,6 +216,68 @@ static void connectHexToNeighbors( Hex *source, int hexCount ) {
         angle += angleInc;
         if ( targetFoundCount == 6 ) {
             return;
+        }
+    }
+
+}
+
+static unsigned int pollColorQueue( void ) {
+    unsigned int color = HEX_BLANK_COLOR;
+    if ( colorQueueStart != -1 ) {
+        color = colorQueue[colorQueueStart%COLOR_QUEUE_CAPACITY];
+        colorQueueStart++;
+        if ( colorQueueStart > colorQueueEnd ) {
+            colorQueueStart = -1;
+            colorQueueEnd = -1;
+        }
+        colorQueueSize--;
+    } else {
+        trace( "empty queue!" );
+    }
+    return color;
+}
+
+static void offerColorQueue( unsigned int color ) {
+    if ( colorQueueSize < COLOR_QUEUE_CAPACITY ) {
+        if ( colorQueueStart == -1 ) {
+            colorQueueStart = 0;
+            colorQueueEnd = 0;
+            colorQueue[colorQueueEnd] = color;
+        } else {
+            colorQueueEnd++;
+            colorQueue[colorQueueEnd%COLOR_QUEUE_CAPACITY] = color;
+        }
+        colorQueueSize++;
+    }
+}
+
+static void feedColorQueue( bool randomize, int colorLimitIndex ) {
+
+    static int sequentialPos = 0;
+
+    if ( randomize ) {
+        offerColorQueue( availableColors[GetRandomValue( 0, colorLimitIndex )] );
+    } else {
+        offerColorQueue( availableColors[sequentialPos % (colorLimitIndex+1)] );
+        sequentialPos++;
+    }
+
+}
+
+static void drawHud( GameWorld *gw ) {
+
+    DrawText( TextFormat( "Score: %d", gw->score ), 15, 15, 20, RAYWHITE );
+    
+    int spacing = 20;
+    int startX = GetScreenWidth() - ( colorQueueSize * queueDrawHex.radius + ( colorQueueSize - 1 ) * spacing ) - 10;
+    
+    for ( int i = 0; i < colorQueueSize; i++ ) {
+        queueDrawHex.center.x = startX + ( queueDrawHex.radius + spacing ) * i;
+        queueDrawHex.center.y = 25;
+        queueDrawHex.color = colorQueue[(i+colorQueueStart)%COLOR_QUEUE_CAPACITY];
+        drawHex( &queueDrawHex );
+        if ( i == 0 ) {
+            drawHexHighlight( &queueDrawHex );
         }
     }
 

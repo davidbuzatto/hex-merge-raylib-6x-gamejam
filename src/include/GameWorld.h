@@ -8,10 +8,12 @@
 #pragma once
 
 #include "Hex.h"
+#include "Macros.h"
 
 typedef struct GameWorld {
-    Hex hexGrid[500];
+    Hex hexGrid[MAX_HEX_GRID_COUNT];
     int hexCount;
+    int score;
 } GameWorld;
 
 /**

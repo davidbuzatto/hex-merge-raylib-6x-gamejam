@@ -5,12 +5,13 @@
 #include "raylib/raylib.h"
 
 #include "Hex.h"
+#include "Macros.h"
 
 void initHex( Hex *h, Vector2 center, float radius ) {
 
     h->center = center;
     h->radius = radius;
-    h->color = 0x000000ff;
+    h->color = HEX_BLANK_COLOR;
 
     for ( int i = 0; i < 6; i++ ) {
         h->neighbors[i] = NULL;
@@ -20,7 +21,15 @@ void initHex( Hex *h, Vector2 center, float radius ) {
 
 void drawHex( Hex *h ) {
     DrawPoly( h->center, 6, h->radius, 90.0f, GetColor( h->color ) );
-    DrawPolyLines( h->center, 6, h->radius, 90.0f, WHITE );
+    int strokeColor = ColorToInt( DARKGRAY );
+    if ( h->color != HEX_BLANK_COLOR ) {
+        strokeColor = h->color;
+    }
+    DrawPolyLines( h->center, 6, h->radius, 90.0f, GetColor( strokeColor ) );
+}
+
+void drawHexHighlight( Hex *h ) {
+    DrawPolyLinesEx( h->center, 6, h->radius, 90.0f, 3.0f, WHITE );
 }
 
 void drawHexGrid( Hex *hexGrid, int hexCount, bool showConnections ) {
@@ -70,4 +79,14 @@ bool checkCollisionPointHex( Vector2 point, Hex *h ) {
 
     return false;
 
+}
+
+Hex *getHexByPoint( Hex *hexGrid, int hexCount, Vector2 point ) {
+    for ( int i = 0; i < hexCount; i++ ) {
+        Hex *h = &hexGrid[i];
+        if ( checkCollisionPointHex( point, h ) ) {
+            return h;
+        }
+    }
+    return NULL;
 }
