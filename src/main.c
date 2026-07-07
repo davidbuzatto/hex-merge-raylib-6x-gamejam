@@ -17,7 +17,7 @@ int main( void ) {
     GameWindow *gameWindow = createGameWindow(
         720,             // width
         720,             // height
-        "Window Title",  // title
+        "Hex-Merge Color Puzzle",  // title
         60,              // target FPS
         true,            // antialiasing
         false,           // resizable
@@ -26,8 +26,8 @@ int main( void ) {
         false,           // always on top
         false,           // invisible background
         false,           // always run
-        false,           // load resources
-        false            // init audio
+        true,            // load resources
+        true             // init audio
     );
 
     initGameWindow( gameWindow );
