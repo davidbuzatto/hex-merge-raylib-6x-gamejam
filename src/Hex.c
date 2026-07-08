@@ -87,7 +87,7 @@ bool checkCollisionPointHex( Vector2 point, Hex *h ) {
             return true;
         }
         angle += angleInc;
-        DrawTriangle( v3, v2, v1, RED );
+        //DrawTriangle( v3, v2, v1, RED ); // debug
     }
 
     return false;
