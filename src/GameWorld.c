@@ -92,7 +92,8 @@ GameWorld *createGameWorld( void ) {
 
     int gridIdCount = ( sizeof( gridQuantities ) / sizeof( gridQuantities[0] ) );
 
-    for ( int i = 0; i < gridIdCount; i++ ) {
+    // grid measuring tests
+    /*for ( int i = 0; i < gridIdCount; i++ ) {
         trace( 
             "%d %.2f %.2f %.2f", 
             gridQuantities[i], 
@@ -100,7 +101,7 @@ GameWorld *createGameWorld( void ) {
             apothem( gridRadii[i] ), 
             apothem( gridRadii[i] ) * 2 * gridQuantities[i]
         );
-    }
+    }*/
 
     gridId = clampInt( gridId, 0, gridIdCount - 1 );
 
@@ -302,18 +303,18 @@ static int checkAndBlend( Hex *h ) {
 
 static void drawHud( GameWorld *gw ) {
 
-    const int fontSize = 20;
+    const int fontSize = 30;
     int spacing = 20;
-    int startX = GetScreenWidth() - ( colorQueueSize * queueDrawHex.radius + ( colorQueueSize - 1 ) * spacing ) - 10;
+    int startX = GetScreenWidth() - ( colorQueueSize * queueDrawHex.radius + ( colorQueueSize - 1 ) * spacing ) - 15;
 
-    DrawText( TextFormat( "Score: %d", gw->score ), 15, 15, fontSize, RAYWHITE );
-    const char *nextColorLabel = "Next color ->";
-    int w = MeasureText( nextColorLabel, fontSize );
-    DrawText( nextColorLabel, startX - w - 20, 15, fontSize, RAYWHITE );
+    DrawTextEx( rm->font, TextFormat( "Score: %d", gw->score ), (Vector2) { 15, 15 }, fontSize, 0.0f, RAYWHITE );
+    const char *nextColorLabel = "Next color";
+    Vector2 m = MeasureTextEx( rm->font, nextColorLabel, fontSize, 0.0f );
+    DrawTextEx( rm->font, nextColorLabel, (Vector2) { startX - m.x - 20, 15 }, fontSize, 0.0f, RAYWHITE );
     
     for ( int i = 0; i < colorQueueSize; i++ ) {
         queueDrawHex.center.x = startX + ( queueDrawHex.radius + spacing ) * i;
-        queueDrawHex.center.y = 25;
+        queueDrawHex.center.y = 33;
         queueDrawHex.color = colorQueue[(i+colorQueueStart)%COLOR_QUEUE_CAPACITY];
         drawHex( &queueDrawHex );
         if ( i == 0 ) {

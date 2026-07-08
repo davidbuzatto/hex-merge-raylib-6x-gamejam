@@ -10,9 +10,13 @@
 #include "raylib/raylib.h"
 
 typedef struct ResourceManager {
-    Texture2D textureExample;
+
+    Font font;
+
+    /*Texture2D textureExample;
     Sound soundExample;
-    Music musicExample;
+    Music musicExample;*/
+    
 } ResourceManager;
 
 // Read-only outside this module. Use rm->field to access resources.

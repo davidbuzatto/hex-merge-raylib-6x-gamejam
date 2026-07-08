@@ -16,6 +16,9 @@ static ResourceManager _rm = { 0 };  // mutable; owned exclusively by this modul
 const ResourceManager * const rm = &_rm;
 
 void loadResourcesResourceManager( void ) {
+    
+    _rm.font = LoadFontEx( "resources/fonts/Fredoka/static/Fredoka-Bold.ttf", 30, NULL, 250 );
+
     //_rm.textureExample = LoadTexture( "resources/images/image.png" );
     //_rm.soundExample = LoadSound( "resources/sfx/sound.wav" );
     //_rm.musicExample = LoadMusicStream( "resources/musics/music.ogg" );
