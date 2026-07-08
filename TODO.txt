@@ -6,7 +6,6 @@ When blending, randomize start like a roulete and animate;
 
 Blend animation;
 Destroy animation;
-Create Icon;
 
 Powerup (hex branco/mudando de cor?, blend com qq coisa)
 Debuf (bruxa bloqueia pedaço do tabuleiro, hex cinza?)
