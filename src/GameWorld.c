@@ -117,7 +117,7 @@ static int colorQueueSize = 0;
 static MergeAnimation mergeAnimation;
 static LevelTransitionAnimation levelTransitionAnimation;
 
-static int currentLevel = 0;
+static int currentLevel = 2;
 static GameState state = GAME_STATE_PLAYING;
 static ColorLimit colorLimit = COLOR_LIMIT_PRIMARY;
 static bool randomizeColorQueueFeeder = true;
@@ -142,7 +142,8 @@ GameWorld *createGameWorld( void ) {
     currentLevel = clampInt( currentLevel, 0, levelQuantity - 1 );
     createHexGrid( gw, levels[currentLevel].centerLineQuantity, levels[currentLevel].hexRadius );
     connectHexGrid( gw->hexGrid, gw->hexCount );
-    gw->score = currentLevel > 0 ? levels[currentLevel-1].pointsToNextLevel : 0;
+    //gw->score = currentLevel > 0 ? levels[currentLevel-1].pointsToNextLevel : 0;
+    gw->score = levels[currentLevel].pointsToNextLevel-1;
 
     for ( int i = 0; i < COLOR_QUEUE_CAPACITY; i++ ) {
         feedColorQueue( randomizeColorQueueFeeder, (int) colorLimit );
@@ -150,12 +151,6 @@ GameWorld *createGameWorld( void ) {
 
     initMergeAnimation( &mergeAnimation );
     initLevelTransitionAnimation( &levelTransitionAnimation );
-
-    // TODO: remove
-    levelTransitionAnimation.running = true;
-    //prepareLevelTransitionAnimation( &levelTransitionAnimation, levels[0].centerLineQuantity, levels[0].hexRadius, levels[1].centerLineQuantity, levels[1].hexRadius );
-    prepareLevelTransitionAnimation( &levelTransitionAnimation, levels[levelQuantity-2].centerLineQuantity, levels[levelQuantity-2].hexRadius, levels[levelQuantity-1].centerLineQuantity, levels[levelQuantity-1].hexRadius );
-    state = GAME_STATE_LEVEL_TRANSITION;
 
     return gw;
 
@@ -174,8 +169,15 @@ void destroyGameWorld( GameWorld *gw ) {
 void updateGameWorld( GameWorld *gw, float delta ) {
 
     if ( state == GAME_STATE_LEVEL_TRANSITION ) {
+
         levelTransitionAnimation.update( &levelTransitionAnimation, delta );
+
+        if ( !levelTransitionAnimation.running ) {
+            state = GAME_STATE_PLAYING;
+        }
+
     } else if ( state == GAME_STATE_SHOW_HELP ) {
+
         if ( IsKeyPressed( KEY_H ) ) {
             state = GAME_STATE_PLAYING;
         }
@@ -186,6 +188,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
             currentHelpPage++;
         }
         currentHelpPage = clampInt( currentHelpPage, 0, 1 );
+
     } else if ( state == GAME_STATE_PLAYING ) {
 
         if ( gw->score >= levels[currentLevel].pointsToNextLevel ) {
@@ -207,10 +210,31 @@ void updateGameWorld( GameWorld *gw, float delta ) {
         if ( !mergeAnimation.running ) {
 
             if ( updateGrid ) {
+
+                levelTransitionAnimation.running = true;
+                prepareLevelTransitionAnimation( 
+                    &levelTransitionAnimation, 
+                    levels[currentLevel-1].centerLineQuantity, 
+                    levels[currentLevel-1].hexRadius, 
+                    levels[currentLevel].centerLineQuantity, 
+                    levels[currentLevel].hexRadius, 
+                    gw->hexGrid, 
+                    gw->hexCount
+                );
+
+                // prepare new grid
                 createHexGrid( gw, levels[currentLevel].centerLineQuantity, levels[currentLevel].hexRadius );
                 connectHexGrid( gw->hexGrid, gw->hexCount );
                 mouseOverHex = NULL;
                 updateGrid = false;
+
+                // copy color data to current grid
+                copyColorDataFromNextHexGrid( &levelTransitionAnimation, gw->hexGrid, gw->hexCount );
+
+                gw->score = levels[currentLevel].pointsToNextLevel - 1;
+
+                state = GAME_STATE_LEVEL_TRANSITION;
+
             }
 
             if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
@@ -268,6 +292,7 @@ void drawGameWorld( GameWorld *gw ) {
 
     if ( state == GAME_STATE_LEVEL_TRANSITION ) {
         levelTransitionAnimation.draw( &levelTransitionAnimation );
+        drawPlayingHud( gw );
     } else if ( state == GAME_STATE_SHOW_HELP ) {
         drawHelpHud( gw );
     } else if ( state == GAME_STATE_PLAYING ) {

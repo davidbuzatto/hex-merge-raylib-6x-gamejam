@@ -30,17 +30,45 @@ void initLevelTransitionAnimation( LevelTransitionAnimation *lta ) {
     lta->draw = draw;
 }
 
-void prepareLevelTransitionAnimation( LevelTransitionAnimation *lta, int chgCenterLineQuantity, float chgHexRadius, int nhgCenterLineQuantity, float nhgHexRadius ) {
+void prepareLevelTransitionAnimation( LevelTransitionAnimation *lta, int chgCenterLineQuantity, float chgHexRadius, int nhgCenterLineQuantity, float nhgHexRadius, Hex *hexGrid, int hexCount ) {
+
     lta->chgCenterLineQuantity = chgCenterLineQuantity;
     lta->chgCount = 0;
     lta->chgHexRadius = chgHexRadius;
     lta->nhgCenterLineQuantity = nhgCenterLineQuantity;
     lta->nhgCount = 0;
     lta->nhgHexRadius = nhgHexRadius;
+    lta->running = true;
+
     prepareSimpleHexGrid( lta->currentHexGrid, lta->chgCenterLineQuantity, lta->chgHexRadius, &lta->chgCount );
     prepareSimpleHexGrid( lta->nextHexGrid, lta->nhgCenterLineQuantity, lta->nhgHexRadius, &lta->nhgCount );
+
     calculateTargetAttributes( lta );
+
+    if ( lta->chgCount == hexCount ) {
+        for ( int i = 0; i < lta->chgCount; i++ ) {
+            lta->currentHexGrid[i].color = hexGrid[i].color;
+        }
+    } else {
+        trace( "incompatible sizes!" );
+    }
+
+    explodingCounter = 0.0f;
+    showingCounter = 0.0f;
     lta->state = LTA_STATE_EXPLODING_CURRENT_GRID;
+
+}
+
+void copyColorDataFromNextHexGrid( LevelTransitionAnimation *lta, Hex *hexGrid, int hexCount ) {
+
+    if ( lta->nhgCount == hexCount ) {
+        for ( int i = 0; i < lta->nhgCount; i++ ) {
+            hexGrid[i].color = lta->nextHexGrid[i].color;
+        }
+    } else {
+        trace( "incompatible sizes!" );
+    }
+
 }
 
 static void update( LevelTransitionAnimation *lta, float delta ) {
@@ -52,17 +80,17 @@ static void update( LevelTransitionAnimation *lta, float delta ) {
     if ( lta->state == LTA_STATE_EXPLODING_CURRENT_GRID ) {
 
         float perc = explodingCounter / explodingTime;
+        float easedPerc = ( 1.0f - cosf( perc * PI ) ) / 2.0f;
 
         for ( int i = 0; i < lta->chgCount; i++ ) {
             SimpleHex *h = &lta->currentHexGrid[i];
-            h->currentCenter = Vector2Lerp( h->startCenter, h->targetCenter, perc );
-            h->currentRadius = Lerp( h->startRadius, h->targetRadius, perc );
+            h->currentCenter = Vector2Lerp( h->startCenter, h->targetCenter, easedPerc );
+            h->currentRadius = Lerp( h->startRadius, h->targetRadius, easedPerc );
         }
 
         explodingCounter += delta;
 
         if ( explodingCounter >= explodingTime ) {
-            explodingCounter = 0;
             lta->state = LTA_STATE_SHOWING_NEXT_GRID;
             for ( int i = 0; i < lta->chgCount; i++ ) {
                 SimpleHex *h = &lta->currentHexGrid[i];
@@ -73,17 +101,19 @@ static void update( LevelTransitionAnimation *lta, float delta ) {
     } else if ( lta->state == LTA_STATE_SHOWING_NEXT_GRID ) {
 
         float perc = showingCounter / showingTime;
-        float alpha = 1 * perc;
+        float easedPerc = ( 1.0f - cosf( perc * PI ) ) / 2.0f;
+        float alpha = 1.0f * easedPerc;
+        alpha = Clamp( alpha, 0.0f, 1.0f );
 
         showingColor = ColorToInt( Fade( DARKGRAY, alpha ) );
         showingCounter += delta;
 
         if ( showingCounter >= showingTime ) {
-            showingCounter = 0;
             lta->state = LTA_STATE_FINISHED;
         }
 
     } else if ( lta->state == LTA_STATE_FINISHED ) {
+        showingCounter = 0.0f;
         lta->running = false;
     }
 
@@ -163,12 +193,25 @@ static void prepareSimpleHexGrid( SimpleHex *hexGrid, int centerLineQuantity, fl
 
 static void calculateTargetAttributes( LevelTransitionAnimation *lta ) {
 
-    float targetRadius = lta->nextHexGrid[0].startRadius;
+    // random positions
+    int *posArray = (int*) malloc( sizeof( int ) * lta->nhgCount );
+    for ( int i = 0; i < lta->nhgCount; i++ ) {
+        posArray[i] = i;
+    }
+    for ( int i = 0; i < lta->nhgCount; i++ ) {
+        int randomPos = GetRandomValue( 0, lta->nhgCount-1 );
+        int temp = posArray[i];
+        posArray[i] = posArray[randomPos];
+        posArray[randomPos] = temp;
+    }
 
     for ( int i = 0; i < lta->chgCount; i++ ) {
-        int pos = GetRandomValue( 0, lta->nhgCount-1 );
+        int pos = posArray[i];
         lta->currentHexGrid[i].targetCenter = lta->nextHexGrid[pos].startCenter;
         lta->currentHexGrid[i].targetRadius = lta->nextHexGrid[pos].startRadius;
+        lta->nextHexGrid[pos].color = lta->currentHexGrid[i].color;
     }
+
+    free( posArray );
 
 }

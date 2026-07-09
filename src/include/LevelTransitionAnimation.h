@@ -37,7 +37,7 @@ struct LevelTransitionAnimation {
     int nhgCenterLineQuantity;
     float nhgHexRadius;
     int nhgCount;
-    
+
     bool running;
     LevelTransitionAnimationState state;
 
@@ -47,4 +47,5 @@ struct LevelTransitionAnimation {
 };
 
 void initLevelTransitionAnimation( LevelTransitionAnimation *lta );
-void prepareLevelTransitionAnimation( LevelTransitionAnimation *lta, int chgCenterLineQuantity, float chgHexRadius, int nhgCenterLineQuantity, float nhgHexRadius );
+void prepareLevelTransitionAnimation( LevelTransitionAnimation *lta, int chgCenterLineQuantity, float chgHexRadius, int nhgCenterLineQuantity, float nhgHexRadius, Hex *hexGrid, int hexCount );
+void copyColorDataFromNextHexGrid( LevelTransitionAnimation *lta, Hex *hexGrid, int hexCount );
