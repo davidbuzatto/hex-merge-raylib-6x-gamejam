@@ -142,6 +142,9 @@ static bool editorActive = false;
 static int currentHelpPage = 0;
 static const int maxHelpPages = 4;
 
+// audio state
+static bool musicEnabled = true;
+
 /**
  * @brief Creates a dinamically allocated GameWorld struct instance.
  */
@@ -178,11 +181,22 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
-    if ( !IsMusicStreamPlaying( rm->bgMusic ) ) {
-        SetMusicVolume( rm->bgMusic, 0.1f );
-        PlayMusicStream( rm->bgMusic );
-    } else {
-        UpdateMusicStream( rm->bgMusic );
+    if ( IsKeyPressed( KEY_S ) ) {
+        musicEnabled = !musicEnabled;
+        if ( musicEnabled ) {
+            ResumeMusicStream( rm->bgMusic );
+        } else {
+            PauseMusicStream( rm->bgMusic );
+        }
+    }
+    
+    if ( musicEnabled ) {
+        if ( !IsMusicStreamPlaying( rm->bgMusic ) ) {
+            SetMusicVolume( rm->bgMusic, 0.1f );
+            PlayMusicStream( rm->bgMusic );
+        } else {
+            UpdateMusicStream( rm->bgMusic );
+        }
     }
 
     if ( ( IsKeyDown( KEY_LEFT_CONTROL ) || IsKeyDown( KEY_RIGHT_CONTROL ) ) && IsKeyPressed( KEY_R ) ) {

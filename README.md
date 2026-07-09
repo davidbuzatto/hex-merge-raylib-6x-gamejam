@@ -30,6 +30,7 @@ Mouse:
 Keyboard:
  - H: open and close the help screen
  - Left / Right Arrow: navigate between help pages
+ - S: toggle the background music
  - R: restart after a game over
  - Ctrl + R: restart at any time
 
@@ -56,8 +57,7 @@ The rainbow wildcard hexagon blends with any color, clearing the dead-end tertia
 ### Links
 
  - YouTube Gameplay: $(YouTube Link)
- - itch.io Release: $(itch.io Game Page)
- - Steam Release: $(Steam Game Page)
+ - itch.io Release: [$(itch.io Game Page)](https://davidbuzatto.itch.io/hexamix)
 
 ### License
 
