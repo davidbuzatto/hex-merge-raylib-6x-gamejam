@@ -1,6 +1,6 @@
 ## HEXAMIX - A Color Merge Puzzle
 
-![HEXAMIX - A Color Merge Puzzle](screenshots/screenshot000.png "HEXAMIX - A Color Merge Puzzle")
+![HEXAMIX - A Color Merge Puzzle](screenshots/hero.png "HEXAMIX - A Color Merge Puzzle")
 
 ### Description
 
@@ -41,7 +41,13 @@ Editor (debug):
 
 ### Screenshots
 
-_TODO: Show your game to the world, animated GIFs recommended!._
+Pieces merge with every compatible neighbor at once, and crossing a score threshold grows the board, scattering the leftover pieces onto it:
+
+![Merging and advancing to the next board](screenshots/merge-and-transition.gif "Merging and advancing to the next board")
+
+The white wildcard hexagon blends with any color, clearing the dead-end tertiaries that clog the board:
+
+![The special hexagon in action](screenshots/special-and-transition.gif "The special hexagon in action")
 
 ### Developers
 
