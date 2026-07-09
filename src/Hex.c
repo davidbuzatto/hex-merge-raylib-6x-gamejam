@@ -11,6 +11,11 @@
 static void drawHexConnections( Hex *h );
 static void drawHexGridConnections( Hex *hexGrid, int hexCount, int hexPos );
 
+// especial hex rainbow render
+static float hue = 0;
+static float hueSpeed = 180.0f;
+static int currentFrameTime = 0;
+
 void initHex( Hex *h, Vector2 center, float radius ) {
 
     h->center = center;
@@ -25,12 +30,26 @@ void initHex( Hex *h, Vector2 center, float radius ) {
 }
 
 void drawHex( Hex *h ) {
+
+    if ( h->color == HEX_ESPECIAL_COLOR ) {
+        int frameTime = GetFrameTime();
+        if ( frameTime != currentFrameTime ) {
+            currentFrameTime = frameTime;
+        }
+        hue += hueSpeed * GetFrameTime();
+        DrawPoly( h->center, 6, h->radius, 90.0f, ColorFromHSV( hue, 1.0f, 1.0f ) );
+        return;
+    }
+
     DrawPoly( h->center, 6, h->radius, 90.0f, GetColor( h->color ) );
     unsigned int strokeColor = ColorToInt( DARKGRAY );
+
     if ( h->color != HEX_BLANK_COLOR ) {
         strokeColor = h->color;
     }
+
     DrawPolyLines( h->center, 6, h->radius, 90.0f, GetColor( strokeColor ) );
+
 }
 
 void drawHexHighlight( Hex *h ) {

@@ -126,7 +126,7 @@ static bool updateGrid = false;
 
 // special hex spawn
 static int specialHexCount = 0;
-static int specialHexSpawn = 5;
+static int specialHexSpawn = 1;
 
 // editor state
 static int editorSelectedColor = 0;
@@ -497,6 +497,12 @@ static int checkAndBlend( Hex *h ) {
         unsigned int finalColor = mostFrequentColor( blendResults, mergeCount );
         h->color = finalColor;
         setMergeAnimationFinalColor( &mergeAnimation, finalColor );
+    }
+
+    // a special (white) hex must never remain on the grid: when it is placed
+    // with no colored neighbor to blend with, it solidifies into a random primary
+    if ( h->color == HEX_ESPECIAL_COLOR ) {
+        h->color = availableColors[GetRandomValue( 0, COLOR_LIMIT_PRIMARY )];
     }
 
     // each successful merge doubles the reward: N merges -> 2^N
