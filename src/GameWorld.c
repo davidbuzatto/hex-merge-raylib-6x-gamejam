@@ -118,11 +118,15 @@ static MergeAnimation mergeAnimation;
 static LevelTransitionAnimation levelTransitionAnimation;
 
 static int currentLevel = 0;
-static GameState state = GAME_STATE_PLAYING;
+static GameState state = GAME_STATE_START;
 static ColorLimit colorLimit = COLOR_LIMIT_PRIMARY;
 static bool randomizeColorQueueFeeder = true;
 static bool showHexConnections = false;
 static bool updateGrid = false;
+
+// special hex spawn
+static int specialHexCount = 0;
+static int specialHexSpawn = 5;
 
 // editor state
 static int editorSelectedColor = 0;
@@ -168,7 +172,13 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
-    if ( state == GAME_STATE_LEVEL_TRANSITION ) {
+    if ( state == GAME_STATE_START ) {
+
+        if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
+            state = GAME_STATE_PLAYING;
+        }
+
+    } else if ( state == GAME_STATE_LEVEL_TRANSITION ) {
 
         levelTransitionAnimation.update( &levelTransitionAnimation, delta );
 
@@ -239,6 +249,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                 if ( mouseOverHex != NULL && mouseOverHex->color == HEX_BLANK_COLOR ) {
                     mouseOverHex->color = pollColorQueue();
                     gw->score += checkAndBlend( mouseOverHex );
+                    specialHexCount++;
                     feedColorQueue( randomizeColorQueueFeeder, (int) colorLimit );
                 }
             }
@@ -288,7 +299,16 @@ void drawGameWorld( GameWorld *gw ) {
     BeginDrawing();
     ClearBackground( BLACK );
 
-    if ( state == GAME_STATE_LEVEL_TRANSITION ) {
+    if ( state == GAME_STATE_START ) {
+        DrawTexturePro( 
+            rm->startScreenTexture, 
+            (Rectangle) { 0, 0, rm->startScreenTexture.width, rm->startScreenTexture.height },
+            (Rectangle) { 0, 0, GetScreenWidth(), GetScreenHeight() },
+            (Vector2) { 0 },
+            0.0f,
+            WHITE
+        );
+    } else if ( state == GAME_STATE_LEVEL_TRANSITION ) {
         levelTransitionAnimation.draw( &levelTransitionAnimation );
         drawPlayingHud( gw );
     } else if ( state == GAME_STATE_SHOW_HELP ) {
@@ -416,6 +436,12 @@ static void offerColorQueue( unsigned int color ) {
 static void feedColorQueue( bool randomize, int colorLimitIndex ) {
 
     static int sequentialPos = 0;
+
+    if ( specialHexCount == specialHexSpawn ) {
+        specialHexCount = 0;
+        offerColorQueue( HEX_ESPECIAL_COLOR );
+        return;
+    }
 
     if ( randomize ) {
         offerColorQueue( availableColors[GetRandomValue( 0, colorLimitIndex )] );
@@ -578,6 +604,13 @@ static void drawPlayingHud( GameWorld *gw ) {
         drawHex( &editorDrawHex );
         drawHexHighlight( &editorDrawHex );
     }
+
+    // special hex
+    float specialHexPerc = specialHexCount / (float) specialHexSpawn;
+    Rectangle specialHexRec = { GetScreenWidth() - 40, 60, 20, 120 };
+    Rectangle specialHexRecValue = { specialHexRec.x, specialHexRec.y + specialHexRec.height - ( specialHexRec.height * specialHexPerc ), specialHexRec.width, specialHexRec.height * specialHexPerc };
+    DrawRectangleRounded( specialHexRecValue, 1.0f, 10, PINK );
+    DrawRectangleRoundedLinesEx( specialHexRec, 1.0f, 10, 3, RAYWHITE );
 
     //DrawFPS( 10, GetScreenHeight() - 25 );
 

@@ -19,6 +19,9 @@ void loadResourcesResourceManager( void ) {
     
     _rm.font = LoadFontEx( "resources/fonts/Fredoka/static/Fredoka-Bold.ttf", 30, NULL, 250 );
 
+    _rm.startScreenTexture = LoadTexture( "resources/images/start-screen.png" );
+    SetTextureFilter( _rm.startScreenTexture, TEXTURE_FILTER_BILINEAR );
+
     _rm.howToMergePSTexture = LoadTexture( "resources/images/howto/how-to-merge-ps-black.png" );
     _rm.howToMergePSTTexture = LoadTexture( "resources/images/howto/how-to-merge-pst-black.png" );
     //_rm.howToMergePSTexture = LoadTexture( "resources/images/howto/how-to-merge-ps-white.png" );
@@ -32,6 +35,7 @@ void loadResourcesResourceManager( void ) {
 void unloadResourcesResourceManager( void ) {
 
     UnloadFont( _rm.font );
+    UnloadTexture( _rm.startScreenTexture );
     UnloadTexture( _rm.howToMergePSTexture );
     UnloadTexture( _rm.howToMergePSTTexture );
 

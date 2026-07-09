@@ -12,6 +12,8 @@
 typedef struct ResourceManager {
 
     Font font;
+
+    Texture2D startScreenTexture;
     Texture2D howToMergePSTexture;
     Texture2D howToMergePSTTexture;
 
