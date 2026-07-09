@@ -43,8 +43,8 @@ void prepareLevelTransitionAnimation( LevelTransitionAnimation *lta, int chgCent
     prepareSimpleHexGrid( lta->currentHexGrid, lta->chgCenterLineQuantity, lta->chgHexRadius, &lta->chgCount );
     prepareSimpleHexGrid( lta->nextHexGrid, lta->nhgCenterLineQuantity, lta->nhgHexRadius, &lta->nhgCount );
 
-    calculateTargetAttributes( lta );
-
+    // the current grid colors must be loaded before scattering them into the
+    // next grid, otherwise calculateTargetAttributes copies blank colors
     if ( lta->chgCount == hexCount ) {
         for ( int i = 0; i < lta->chgCount; i++ ) {
             lta->currentHexGrid[i].color = hexGrid[i].color;
@@ -53,9 +53,11 @@ void prepareLevelTransitionAnimation( LevelTransitionAnimation *lta, int chgCent
         trace( "incompatible sizes!" );
     }
 
+    calculateTargetAttributes( lta );
+
     explodingCounter = 0.0f;
     showingCounter = 0.0f;
-    showingColor = ColorToInt( Fade( DARKGRAY, 0.0f ) );
+    showingColor = ColorToInt( BLANK );
     lta->state = LTA_STATE_EXPLODING_CURRENT_GRID;
 
 }
