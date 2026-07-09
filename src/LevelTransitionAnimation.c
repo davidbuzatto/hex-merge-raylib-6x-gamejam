@@ -10,12 +10,19 @@
 #include "Utils.h"
 
 static void update( LevelTransitionAnimation *lta, float delta );
+static void initSimpleHex( SimpleHex *h, Vector2 center, float radius );
 static void draw( LevelTransitionAnimation *lta );
-static void drawSimpleHex( Hex *h, unsigned int strokeColor );
-static void drawSimpleHexGrid( Hex *hexGrid, int hexCount, unsigned int strokeColor );
-static void prepareSimpleHexGrid( Hex *hexGrid, int centerLineQuantity, float hexRadius, int *hexCount );
+static void drawSimpleHex( SimpleHex* h, unsigned int strokeColor );
+static void drawSimpleHexGrid( SimpleHex *hexGrid, int hexCount, unsigned int strokeColor );
+static void prepareSimpleHexGrid( SimpleHex *hexGrid, int centerLineQuantity, float hexRadius, int *hexCount );
+static void calculateTargetAttributes( LevelTransitionAnimation *lta );
 
-static const float animationUnitTime = 0.2f;
+static float explodingTime = 1.0f;
+static float explodingCounter = 0.0f;
+
+static float showingTime = 1.0f;
+static float showingCounter = 0.0f;
+static unsigned int showingColor = 0;
 
 void initLevelTransitionAnimation( LevelTransitionAnimation *lta ) {
     lta->running = false;
@@ -30,9 +37,10 @@ void prepareLevelTransitionAnimation( LevelTransitionAnimation *lta, int chgCent
     lta->nhgCenterLineQuantity = nhgCenterLineQuantity;
     lta->nhgCount = 0;
     lta->nhgHexRadius = nhgHexRadius;
-    lta->animationUnitCounter = animationUnitTime;
     prepareSimpleHexGrid( lta->currentHexGrid, lta->chgCenterLineQuantity, lta->chgHexRadius, &lta->chgCount );
     prepareSimpleHexGrid( lta->nextHexGrid, lta->nhgCenterLineQuantity, lta->nhgHexRadius, &lta->nhgCount );
+    calculateTargetAttributes( lta );
+    lta->state = LTA_STATE_EXPLODING_CURRENT_GRID;
 }
 
 static void update( LevelTransitionAnimation *lta, float delta ) {
@@ -41,31 +49,84 @@ static void update( LevelTransitionAnimation *lta, float delta ) {
         return;
     }
 
+    if ( lta->state == LTA_STATE_EXPLODING_CURRENT_GRID ) {
+
+        float perc = explodingCounter / explodingTime;
+
+        for ( int i = 0; i < lta->chgCount; i++ ) {
+            SimpleHex *h = &lta->currentHexGrid[i];
+            h->currentCenter = Vector2Lerp( h->startCenter, h->targetCenter, perc );
+            h->currentRadius = Lerp( h->startRadius, h->targetRadius, perc );
+        }
+
+        explodingCounter += delta;
+
+        if ( explodingCounter >= explodingTime ) {
+            explodingCounter = 0;
+            lta->state = LTA_STATE_SHOWING_NEXT_GRID;
+            for ( int i = 0; i < lta->chgCount; i++ ) {
+                SimpleHex *h = &lta->currentHexGrid[i];
+                h->currentCenter = h->targetCenter;
+            }
+        }
+
+    } else if ( lta->state == LTA_STATE_SHOWING_NEXT_GRID ) {
+
+        float perc = showingCounter / showingTime;
+        float alpha = 1 * perc;
+
+        showingColor = ColorToInt( Fade( DARKGRAY, alpha ) );
+        showingCounter += delta;
+
+        if ( showingCounter >= showingTime ) {
+            showingCounter = 0;
+            lta->state = LTA_STATE_FINISHED;
+        }
+
+    } else if ( lta->state == LTA_STATE_FINISHED ) {
+        lta->running = false;
+    }
+
+}
+
+static void initSimpleHex( SimpleHex *h, Vector2 center, float radius ) {
+    h->currentCenter = center;
+    h->startCenter = center;
+    h->currentRadius = radius;
+    h->startRadius = radius;
+    h->apothem = apothem( h->currentRadius );
+    h->color = HEX_BLANK_COLOR;
 }
 
 static void draw( LevelTransitionAnimation *lta ) {
+
     if ( lta->running ) {
-        drawSimpleHexGrid( lta->currentHexGrid, lta->chgCount, ColorToInt( DARKGRAY ) );
-        drawSimpleHexGrid( lta->nextHexGrid, lta->nhgCount, ColorToInt( DARKGRAY ) );
+        if ( lta->state == LTA_STATE_EXPLODING_CURRENT_GRID ) {
+            drawSimpleHexGrid( lta->currentHexGrid, lta->chgCount, ColorToInt( DARKGRAY ) );
+        } else if ( lta->state == LTA_STATE_SHOWING_NEXT_GRID ) {
+            drawSimpleHexGrid( lta->currentHexGrid, lta->chgCount, ColorToInt( DARKGRAY ) );
+            drawSimpleHexGrid( lta->nextHexGrid, lta->nhgCount, showingColor );
+        }
     }
+
 }
 
-static void drawSimpleHex( Hex *h, unsigned int strokeColor ) {
-    DrawPoly( h->center, 6, h->radius, 90.0f, GetColor( h->color ) );
+static void drawSimpleHex( SimpleHex *h, unsigned int strokeColor ) {
+    DrawPoly( h->currentCenter, 6, h->currentRadius, 90.0f, GetColor( h->color ) );
     if ( h->color != HEX_BLANK_COLOR ) {
         strokeColor = h->color;
     }
-    DrawPolyLines( h->center, 6, h->radius, 90.0f, GetColor( strokeColor ) );
+    DrawPolyLines( h->currentCenter, 6, h->currentRadius, 90.0f, GetColor( strokeColor ) );
 }
 
-static void drawSimpleHexGrid( Hex *hexGrid, int hexCount, unsigned int strokeColor ) {
+static void drawSimpleHexGrid( SimpleHex *hexGrid, int hexCount, unsigned int strokeColor ) {
     for ( int i = 0; i < hexCount; i++ ) {
-        Hex *h = &hexGrid[i];
+        SimpleHex *h = &hexGrid[i];
         drawSimpleHex( h, strokeColor );
     }
 }
 
-static void prepareSimpleHexGrid( Hex *hexGrid, int centerLineQuantity, float hexRadius, int *hexCount ) {
+static void prepareSimpleHexGrid( SimpleHex *hexGrid, int centerLineQuantity, float hexRadius, int *hexCount ) {
 
     int hc = 0;
     
@@ -86,7 +147,7 @@ static void prepareSimpleHexGrid( Hex *hexGrid, int centerLineQuantity, float he
         for ( int j = 0; j < lineQuantity; j++ ) {
             Vector2 center = { startX + hApothem * 2 * j + offset, startY + vApothem * i };
             if ( hc < MAX_HEX_GRID_COUNT ) {
-                initHex( &hexGrid[hc++], center, hexRadius );
+                initSimpleHex( &hexGrid[hc++], center, hexRadius );
             }
         }
         if ( decrease ) {
@@ -97,5 +158,17 @@ static void prepareSimpleHexGrid( Hex *hexGrid, int centerLineQuantity, float he
     }
 
     *hexCount = hc;
+
+}
+
+static void calculateTargetAttributes( LevelTransitionAnimation *lta ) {
+
+    float targetRadius = lta->nextHexGrid[0].startRadius;
+
+    for ( int i = 0; i < lta->chgCount; i++ ) {
+        int pos = GetRandomValue( 0, lta->nhgCount-1 );
+        lta->currentHexGrid[i].targetCenter = lta->nextHexGrid[pos].startCenter;
+        lta->currentHexGrid[i].targetRadius = lta->nextHexGrid[pos].startRadius;
+    }
 
 }

@@ -153,7 +153,8 @@ GameWorld *createGameWorld( void ) {
 
     // TODO: remove
     levelTransitionAnimation.running = true;
-    prepareLevelTransitionAnimation( &levelTransitionAnimation, levels[0].centerLineQuantity, levels[0].hexRadius, levels[1].centerLineQuantity, levels[1].hexRadius );
+    //prepareLevelTransitionAnimation( &levelTransitionAnimation, levels[0].centerLineQuantity, levels[0].hexRadius, levels[1].centerLineQuantity, levels[1].hexRadius );
+    prepareLevelTransitionAnimation( &levelTransitionAnimation, levels[levelQuantity-2].centerLineQuantity, levels[levelQuantity-2].hexRadius, levels[levelQuantity-1].centerLineQuantity, levels[levelQuantity-1].hexRadius );
     state = GAME_STATE_LEVEL_TRANSITION;
 
     return gw;

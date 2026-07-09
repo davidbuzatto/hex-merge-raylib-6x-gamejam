@@ -9,20 +9,37 @@
 
 typedef struct LevelTransitionAnimation LevelTransitionAnimation;
 
+typedef enum LevelTransitionAnimationState {
+    LTA_STATE_EXPLODING_CURRENT_GRID,
+    LTA_STATE_SHOWING_NEXT_GRID,
+    LTA_STATE_FINISHED
+} LevelTransitionAnimationState;
+
+typedef struct SimpleHex {
+    Vector2 currentCenter;
+    Vector2 startCenter;
+    Vector2 targetCenter;
+    float currentRadius;
+    float startRadius;
+    float targetRadius;
+    float apothem;
+    unsigned int color;
+} SimpleHex;
+
 struct LevelTransitionAnimation {
 
-    Hex currentHexGrid[MAX_HEX_GRID_COUNT];
+    SimpleHex currentHexGrid[MAX_HEX_GRID_COUNT];
     int chgCenterLineQuantity;
     float chgHexRadius;
     int chgCount;
 
-    Hex nextHexGrid[MAX_HEX_GRID_COUNT];
+    SimpleHex nextHexGrid[MAX_HEX_GRID_COUNT];
     int nhgCenterLineQuantity;
     float nhgHexRadius;
     int nhgCount;
-
-    float animationUnitCounter;
+    
     bool running;
+    LevelTransitionAnimationState state;
 
     void (*update)( LevelTransitionAnimation *lta, float delta );
     void (*draw)( LevelTransitionAnimation *lta );

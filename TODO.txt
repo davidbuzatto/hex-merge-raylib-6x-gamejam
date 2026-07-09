@@ -1,11 +1,12 @@
+Mudar de fase -> transição por pontuação
+    Implementar transição.
+    Carregar cores junto.
+
 Tela inicial
 Fazer o score progredir com os pontos do momento;
-Usar atalhos que não conflitam com o navegador (f1 é um deles!)
 Powerup (hex branco/mudando de cor?, blend com qq coisa) -> preparado
 Debuf (bruxa bloqueia pedaço do tabuleiro, hex cinza?)
 
-Mudar de fase -> transição por pontuação
-    Implementar transição.
 
 Detectar fim de jogo: tabuleiro cheio e a peça atual não cabe em nenhuma célula vazia
     -> estado de game over (tela/mensagem, travar o placar, explodir os hexes);
