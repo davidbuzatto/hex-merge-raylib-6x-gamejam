@@ -19,13 +19,23 @@ void loadResourcesResourceManager( void ) {
     
     _rm.font = LoadFontEx( "resources/fonts/Fredoka/static/Fredoka-Bold.ttf", 30, NULL, 250 );
 
-    //_rm.textureExample = LoadTexture( "resources/images/image.png" );
+    _rm.howToMergePSTexture = LoadTexture( "resources/images/howto/how-to-merge-ps-black.png" );
+    _rm.howToMergePSTTexture = LoadTexture( "resources/images/howto/how-to-merge-pst-black.png" );
+    //_rm.howToMergePSTexture = LoadTexture( "resources/images/howto/how-to-merge-ps-white.png" );
+    //_rm.howToMergePSTTexture = LoadTexture( "resources/images/howto/how-to-merge-pst-white.png" );
+
     //_rm.soundExample = LoadSound( "resources/sfx/sound.wav" );
     //_rm.musicExample = LoadMusicStream( "resources/musics/music.ogg" );
+
 }
 
 void unloadResourcesResourceManager( void ) {
-    //UnloadTexture( _rm.textureExample );
+
+    UnloadFont( _rm.font );
+    UnloadTexture( _rm.howToMergePSTexture );
+    UnloadTexture( _rm.howToMergePSTTexture );
+
     //UnloadSound( _rm.soundExample );
     //UnloadMusicStream( _rm.musicExample );
+    
 }

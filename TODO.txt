@@ -1,22 +1,18 @@
+Tela inicial
+
 Powerup (hex branco/mudando de cor?, blend com qq coisa) -> preparado
 Debuf (bruxa bloqueia pedaço do tabuleiro, hex cinza?)
 
 Mudar de fase -> transição por pontuação
-Mostrar em qual fase está
+    Implementar transição.
 
-Mostrar progresso de pontuação.
+Detectar fim de jogo: tabuleiro cheio e a peça atual não cabe em nenhuma célula vazia
+    -> estado de game over (tela/mensagem, travar o placar, explodir os hexes);
 
-Detectar fim de jogo: tabuleiro cheio e a peca atual nao cabe em nenhuma celula vazia
-  -> estado de game over (tela/mensagem, travar o placar, explodir os hexes);
+Animações
+    Animacao de expansao da grade quando o tamanho do tabuleiro mudar;
 
-Aniamções
-Animacao de expansao da grade quando o tamanho do tabuleiro mudar;
-abrir a grade ou explodir e criar a nova?
-
-=== Audio ===
 Efeitos sonoros de merge;
-Musica de fundo;
-
-=== Depois (pos-mecanica) ===
+Música de fundo;
 Reescrever as regras no README;
 Gerar screenshots/gifs;

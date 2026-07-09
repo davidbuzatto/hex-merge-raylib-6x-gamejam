@@ -25,6 +25,8 @@ typedef enum GameState {
     GAME_STATE_LEVEL_TRANSITION,
     GAME_STATE_GAMEOVER,
     GAME_STATE_EDITOR,
+    GAME_STATE_SHOW_HELP_1,
+    GAME_STATE_SHOW_HELP_2,
 } GameState;
 
 typedef enum ColorLimit {
@@ -119,6 +121,7 @@ static GameState state = GAME_STATE_PLAYING;
 static ColorLimit colorLimit = COLOR_LIMIT_PRIMARY;
 static bool randomizeColorQueueFeeder = true;
 static bool showHexConnections = false;
+static bool updateGrid = false;
 
 // editor state
 static int editorSelectedColor = 0;
@@ -134,7 +137,7 @@ GameWorld *createGameWorld( void ) {
     currentLevel = clampInt( currentLevel, 0, levelQuantity - 1 );
     createHexGrid( gw, levels[currentLevel].centerLineQuantity, levels[currentLevel].hexRadius );
     connectHexGrid( gw->hexGrid, gw->hexCount );
-    gw->score = 0;
+    gw->score = currentLevel > 0 ? levels[currentLevel-1].pointsToNextLevel : 0;
 
     for ( int i = 0; i < COLOR_QUEUE_CAPACITY; i++ ) {
         feedColorQueue( randomizeColorQueueFeeder, (int) colorLimit );
@@ -158,16 +161,41 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
+    if ( gw->score >= levels[currentLevel].pointsToNextLevel ) {
+        currentLevel++;
+        updateGrid = true;
+    }
+
     if ( IsKeyPressed( KEY_F1 ) ) {
-        state = GAME_STATE_EDITOR;
+        switch ( state ) {
+            case GAME_STATE_PLAYING:
+                state = GAME_STATE_SHOW_HELP_1;
+                break;
+            case GAME_STATE_SHOW_HELP_1:
+                state = GAME_STATE_SHOW_HELP_2;
+                break;
+            default:
+                state = GAME_STATE_PLAYING;
+                break;
+        }
     }
     if ( IsKeyPressed( KEY_F2 ) ) {
+        state = GAME_STATE_EDITOR;
+    }
+    if ( IsKeyPressed( KEY_F3 ) ) {
         state = GAME_STATE_PLAYING;
     }
 
     mouseOverHex = getHexByPoint( gw->hexGrid, gw->hexCount, GetMousePosition() );
 
     if ( !mergeAnimation.running ) {
+
+        if ( updateGrid ) {
+            createHexGrid( gw, levels[currentLevel].centerLineQuantity, levels[currentLevel].hexRadius );
+            connectHexGrid( gw->hexGrid, gw->hexCount );
+            mouseOverHex = NULL;
+            updateGrid = false;
+        }
 
         if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
             if ( mouseOverHex != NULL && mouseOverHex->color == HEX_BLANK_COLOR ) {
@@ -186,12 +214,17 @@ void updateGameWorld( GameWorld *gw, float delta ) {
                 }
             }
 
-            if ( IsKeyPressed( KEY_W ) ) {
-                editorSelectedColor = ( editorSelectedColor + 1 ) % editorMaxColors;
-                editorDrawHex.color = availableColors[editorSelectedColor];
+            if ( IsMouseButtonPressed( MOUSE_BUTTON_MIDDLE ) ) {
+                if ( mouseOverHex != NULL ) {
+                    mouseOverHex->color = HEX_BLANK_COLOR;
+                }
             }
 
-            if ( IsKeyPressed( KEY_S ) ) {
+            Vector2 mw = GetMouseWheelMoveV();
+            if ( mw.y > 0 ) {
+                editorSelectedColor = ( editorSelectedColor + 1 ) % editorMaxColors;
+                editorDrawHex.color = availableColors[editorSelectedColor];
+            } else if ( mw.y < 0 ) {
                 editorSelectedColor--;
                 if ( editorSelectedColor < 0 ) {
                     editorSelectedColor = editorMaxColors - 1;
@@ -451,7 +484,18 @@ static void drawHud( GameWorld *gw ) {
     DrawTextEx( rm->font, scoreLabel, (Vector2) { 15, 15 }, fontSize, 0.0f, RAYWHITE );
 
     Rectangle scoreRec = { mScoreLabel.x + 100, 20, 120, 20 };
-    DrawRectangleRoundedLinesEx( scoreRec, 1.0f, 10, 2, RAYWHITE );
+
+    int prevPoints = 0;
+    if ( currentLevel > 0 ) {
+        prevPoints = levels[currentLevel-1].pointsToNextLevel;
+    }
+    int base = gw->score - prevPoints;
+    int next = levels[currentLevel].pointsToNextLevel - prevPoints;
+    float perc = base / (float) next;
+    Rectangle scoreRecValue = { scoreRec.x, scoreRec.y, scoreRec.width * perc, scoreRec.height };
+
+    DrawRectangleRounded( scoreRecValue, 1.0f, 10, PINK );
+    DrawRectangleRoundedLinesEx( scoreRec, 1.0f, 10, 3, RAYWHITE );
     DrawTextEx( rm->font, TextFormat( "%05d", levels[currentLevel].pointsToNextLevel ), (Vector2) { scoreRec.x + scoreRec.width + 8, 15 }, fontSize, 0.0f, RAYWHITE );
 
     const char *scoreValueLabel = TextFormat( "%05d", gw->score );
@@ -478,13 +522,21 @@ static void drawHud( GameWorld *gw ) {
     }
 
     if ( state == GAME_STATE_EDITOR ) {
-        const char *editorLabel = "Editor";
+        const char *editorLabel = "Editor Mode!";
         DrawTextEx( rm->font, editorLabel, (Vector2) { 15, GetScreenHeight() - 45 }, fontSize, 0.0f, RAYWHITE );
         Vector2 mEditorLabel = MeasureTextEx( rm->font, editorLabel, fontSize, 0.0f );
         editorDrawHex.center.x = 15 + mEditorLabel.x + 20;
         editorDrawHex.center.y = GetScreenHeight() - 27;
         drawHex( &editorDrawHex );
         drawHexHighlight( &editorDrawHex );
+    }
+
+    if ( state == GAME_STATE_SHOW_HELP_1 ) {
+        DrawTexture( rm->howToMergePSTexture, 0, 0, WHITE );
+    }
+
+    if ( state == GAME_STATE_SHOW_HELP_2 ) {
+        DrawTexture( rm->howToMergePSTTexture, 0, 0, WHITE );
     }
 
     //DrawFPS( 10, GetScreenHeight() - 25 );
