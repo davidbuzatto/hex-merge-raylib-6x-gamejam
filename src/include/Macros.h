@@ -8,7 +8,7 @@
 #define HEX_SPECIAL_HUE_SPEED 180.0f
 
 #define HEX_BLANK_COLOR    0x00000000
-#define HEX_ESPECIAL_COLOR 0xffffffff
+#define HEX_SPECIAL_COLOR 0xffffffff
 
 // final color palette
 // primary

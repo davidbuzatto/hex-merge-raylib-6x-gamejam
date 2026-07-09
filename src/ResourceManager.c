@@ -25,8 +25,14 @@ void loadResourcesResourceManager( void ) {
     _rm.gameOverScreenTexture = LoadTexture( "resources/images/screens/gameover.png" );
     SetTextureFilter( _rm.gameOverScreenTexture, TEXTURE_FILTER_BILINEAR );
 
-    _rm.howToMergePSTexture = LoadTexture( "resources/images/howto/how-to-merge-ps-black.png" );
-    _rm.howToMergePSTTexture = LoadTexture( "resources/images/howto/how-to-merge-pst-black.png" );
+    _rm.helpPage01Texture = LoadTexture( "resources/images/help/page-01-controls.png" );
+    SetTextureFilter( _rm.helpPage01Texture, TEXTURE_FILTER_BILINEAR );
+    _rm.helpPage02Texture = LoadTexture( "resources/images/help/page-02-merging.png" );
+    SetTextureFilter( _rm.helpPage02Texture, TEXTURE_FILTER_BILINEAR );
+    _rm.helpPage03Texture = LoadTexture( "resources/images/help/page-03-merging-combinations.png" );
+    SetTextureFilter( _rm.helpPage03Texture, TEXTURE_FILTER_BILINEAR );
+    _rm.helpPage04Texture = LoadTexture( "resources/images/help/page-04-merging-combinations.png" );
+    SetTextureFilter( _rm.helpPage04Texture, TEXTURE_FILTER_BILINEAR );
 
     _rm.placeSoundPool = createSoundPool( "resources/sfx/kenney/click4.ogg", 3 );
     _rm.placeFailSoundPool = createSoundPool( "resources/sfx/kenney/highDown.ogg", 3 );
@@ -46,8 +52,8 @@ void unloadResourcesResourceManager( void ) {
 
     UnloadFont( _rm.font );
     UnloadTexture( _rm.startScreenTexture );
-    UnloadTexture( _rm.howToMergePSTexture );
-    UnloadTexture( _rm.howToMergePSTTexture );
+    UnloadTexture( _rm.helpPage01Texture );
+    UnloadTexture( _rm.helpPage02Texture );
 
     destroySoundPool( _rm.placeSoundPool );
     destroySoundPool( _rm.placeFailSoundPool );

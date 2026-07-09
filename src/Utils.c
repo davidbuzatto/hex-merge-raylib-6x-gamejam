@@ -39,7 +39,7 @@ int clampInt( int value, int min, int max ) {
 static unsigned int colorBlendHelper( unsigned int color1, unsigned int color2 ) {
 
     switch ( color1 ) {
-        case HEX_ESPECIAL_COLOR:
+        case HEX_SPECIAL_COLOR:
             return color2;
             break;
         case HEX_RED:

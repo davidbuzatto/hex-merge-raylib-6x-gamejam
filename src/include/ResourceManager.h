@@ -18,8 +18,10 @@ typedef struct ResourceManager {
     Texture2D startScreenTexture;
     Texture2D gameOverScreenTexture;
 
-    Texture2D howToMergePSTexture;
-    Texture2D howToMergePSTTexture;
+    Texture2D helpPage01Texture;
+    Texture2D helpPage02Texture;
+    Texture2D helpPage03Texture;
+    Texture2D helpPage04Texture;
 
     SoundPool *placeSoundPool;
     SoundPool *placeFailSoundPool;

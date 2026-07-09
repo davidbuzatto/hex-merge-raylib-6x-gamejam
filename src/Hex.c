@@ -31,7 +31,7 @@ void initHex( Hex *h, Vector2 center, float radius ) {
 
 void drawHex( Hex *h, bool drawSpecialEffect ) {
 
-    if ( h->color == HEX_ESPECIAL_COLOR && drawSpecialEffect ) {
+    if ( h->color == HEX_SPECIAL_COLOR && drawSpecialEffect ) {
 
         float hue = (float) fmod( GetTime() * HEX_SPECIAL_HUE_SPEED, 360.0 );
         Color baseColor = ColorFromHSV( hue, 1.0f, 1.0f );

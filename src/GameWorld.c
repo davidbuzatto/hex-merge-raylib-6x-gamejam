@@ -73,8 +73,8 @@ static unsigned int availableColors[] = {
     HEX_BLUE_GREEN, 
     HEX_BLUE_PURPLE, 
     HEX_RED_PURPLE, 
-    // especial
-    HEX_ESPECIAL_COLOR
+    // special
+    HEX_SPECIAL_COLOR
 };
 
 static Hex *mouseOverHex = NULL;
@@ -140,6 +140,7 @@ static bool editorActive = false;
 
 // help state
 static int currentHelpPage = 0;
+static const int maxHelpPages = 4;
 
 /**
  * @brief Creates a dinamically allocated GameWorld struct instance.
@@ -209,11 +210,14 @@ void updateGameWorld( GameWorld *gw, float delta ) {
         }
         if ( IsKeyPressed( KEY_LEFT ) ) {
             currentHelpPage--;
+            if ( currentHelpPage < 0 ) {
+                currentHelpPage = maxHelpPages - 1;
+            }
         }
         if ( IsKeyPressed( KEY_RIGHT ) ) {
-            currentHelpPage++;
+            currentHelpPage = ( currentHelpPage + 1 ) % maxHelpPages;
         }
-        currentHelpPage = clampInt( currentHelpPage, 0, 1 );
+        
 
     } else if ( state == GAME_STATE_PLAYING ) {
 
@@ -484,7 +488,7 @@ static void feedColorQueue( bool randomize, int colorLimitIndex ) {
     if ( specialHexCount == specialHexSpawn ) {
         playSoundFromSoundPool( rm->specialHexSoundPool );
         specialHexCount = 0;
-        offerColorQueue( HEX_ESPECIAL_COLOR );
+        offerColorQueue( HEX_SPECIAL_COLOR );
         return;
     }
 
@@ -546,7 +550,7 @@ static int checkAndBlend( Hex *h ) {
 
     // a special (white) hex must never remain on the grid: when it is placed
     // with no colored neighbor to blend with, it solidifies into a random primary
-    if ( h->color == HEX_ESPECIAL_COLOR ) {
+    if ( h->color == HEX_SPECIAL_COLOR ) {
         h->color = availableColors[GetRandomValue( 0, COLOR_LIMIT_PRIMARY )];
     }
 
@@ -713,10 +717,44 @@ static void drawHelpHud( GameWorld *gw ) {
 
     switch ( currentHelpPage ) {
         case 0:
-            DrawTexture( rm->howToMergePSTexture, 0, 0, WHITE );
+            DrawTexturePro( 
+                rm->helpPage01Texture, 
+                (Rectangle) { 0, 0, rm->helpPage01Texture.width, rm->helpPage01Texture.height },
+                (Rectangle) { 0, 0, GetScreenWidth(), GetScreenHeight() },
+                (Vector2) { 0 },
+                0.0f,
+                WHITE
+            );
             break;
         case 1:
-            DrawTexture( rm->howToMergePSTTexture, 0, 0, WHITE );
+            DrawTexturePro( 
+                rm->helpPage02Texture, 
+                (Rectangle) { 0, 0, rm->helpPage02Texture.width, rm->helpPage02Texture.height },
+                (Rectangle) { 0, 0, GetScreenWidth(), GetScreenHeight() },
+                (Vector2) { 0 },
+                0.0f,
+                WHITE
+            );
+            break;
+        case 2:
+            DrawTexturePro( 
+                rm->helpPage03Texture, 
+                (Rectangle) { 0, 0, rm->helpPage03Texture.width, rm->helpPage03Texture.height },
+                (Rectangle) { 0, 0, GetScreenWidth(), GetScreenHeight() },
+                (Vector2) { 0 },
+                0.0f,
+                WHITE
+            );
+            break;
+        case 3:
+            DrawTexturePro( 
+                rm->helpPage04Texture, 
+                (Rectangle) { 0, 0, rm->helpPage04Texture.width, rm->helpPage04Texture.height },
+                (Rectangle) { 0, 0, GetScreenWidth(), GetScreenHeight() },
+                (Vector2) { 0 },
+                0.0f,
+                WHITE
+            );
             break;
         default:
             break;

@@ -1,4 +1,0 @@
-Melhorar o help (dicas de troca de página).
-
-Reescrever as regras no README;
-Gerar screenshots/gifs;
