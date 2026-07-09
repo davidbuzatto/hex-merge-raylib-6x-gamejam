@@ -15,6 +15,7 @@
 
 #include "GameWorld.h"
 #include "Macros.h"
+#include "LevelTransitionAnimation.h"
 #include "MergeAnimation.h"
 #include "ResourceManager.h"
 #include "Utils.h"
@@ -24,9 +25,7 @@ typedef enum GameState {
     GAME_STATE_PLAYING,
     GAME_STATE_LEVEL_TRANSITION,
     GAME_STATE_GAMEOVER,
-    GAME_STATE_EDITOR,
-    GAME_STATE_SHOW_HELP_1,
-    GAME_STATE_SHOW_HELP_2,
+    GAME_STATE_SHOW_HELP,
 } GameState;
 
 typedef enum ColorLimit {
@@ -52,7 +51,8 @@ static void feedColorQueue( bool randomize, int colorLimitIndex );
 static int checkAndBlend( Hex *h );
 static unsigned int mostFrequentColor( unsigned int *colors, int count );
 
-static void drawHud( GameWorld *gw );
+static void drawPlayingHud( GameWorld *gw );
+static void drawHelpHud( GameWorld *gw );
 
 static unsigned int availableColors[] = {
     // primary
@@ -115,6 +115,7 @@ static int colorQueueEnd = -1;
 static int colorQueueSize = 0;
 
 static MergeAnimation mergeAnimation;
+static LevelTransitionAnimation levelTransitionAnimation;
 
 static int currentLevel = 0;
 static GameState state = GAME_STATE_PLAYING;
@@ -126,6 +127,10 @@ static bool updateGrid = false;
 // editor state
 static int editorSelectedColor = 0;
 static int editorMaxColors = 12;
+static bool editorActive = false;
+
+// help state
+static int currentHelpPage = 0;
 
 /**
  * @brief Creates a dinamically allocated GameWorld struct instance.
@@ -144,6 +149,12 @@ GameWorld *createGameWorld( void ) {
     }
 
     initMergeAnimation( &mergeAnimation );
+    initLevelTransitionAnimation( &levelTransitionAnimation );
+
+    // TODO: remove
+    levelTransitionAnimation.running = true;
+    prepareLevelTransitionAnimation( &levelTransitionAnimation, levels[0].centerLineQuantity, levels[0].hexRadius, levels[1].centerLineQuantity, levels[1].hexRadius );
+    state = GAME_STATE_LEVEL_TRANSITION;
 
     return gw;
 
@@ -161,83 +172,89 @@ void destroyGameWorld( GameWorld *gw ) {
  */
 void updateGameWorld( GameWorld *gw, float delta ) {
 
-    if ( gw->score >= levels[currentLevel].pointsToNextLevel ) {
-        currentLevel++;
-        updateGrid = true;
-    }
-
-    if ( IsKeyPressed( KEY_F1 ) ) {
-        switch ( state ) {
-            case GAME_STATE_PLAYING:
-                state = GAME_STATE_SHOW_HELP_1;
-                break;
-            case GAME_STATE_SHOW_HELP_1:
-                state = GAME_STATE_SHOW_HELP_2;
-                break;
-            default:
-                state = GAME_STATE_PLAYING;
-                break;
+    if ( state == GAME_STATE_LEVEL_TRANSITION ) {
+        levelTransitionAnimation.update( &levelTransitionAnimation, delta );
+    } else if ( state == GAME_STATE_SHOW_HELP ) {
+        if ( IsKeyPressed( KEY_H ) ) {
+            state = GAME_STATE_PLAYING;
         }
-    }
-    if ( IsKeyPressed( KEY_F2 ) ) {
-        state = GAME_STATE_EDITOR;
-    }
-    if ( IsKeyPressed( KEY_F3 ) ) {
-        state = GAME_STATE_PLAYING;
-    }
+        if ( IsKeyPressed( KEY_LEFT ) ) {
+            currentHelpPage--;
+        }
+        if ( IsKeyPressed( KEY_RIGHT ) ) {
+            currentHelpPage++;
+        }
+        currentHelpPage = clampInt( currentHelpPage, 0, 1 );
+    } else if ( state == GAME_STATE_PLAYING ) {
 
-    mouseOverHex = getHexByPoint( gw->hexGrid, gw->hexCount, GetMousePosition() );
-
-    if ( !mergeAnimation.running ) {
-
-        if ( updateGrid ) {
-            createHexGrid( gw, levels[currentLevel].centerLineQuantity, levels[currentLevel].hexRadius );
-            connectHexGrid( gw->hexGrid, gw->hexCount );
-            mouseOverHex = NULL;
-            updateGrid = false;
+        if ( gw->score >= levels[currentLevel].pointsToNextLevel ) {
+            currentLevel++;
+            updateGrid = true;
         }
 
-        if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
-            if ( mouseOverHex != NULL && mouseOverHex->color == HEX_BLANK_COLOR ) {
-                mouseOverHex->color = pollColorQueue();
-                gw->score += checkAndBlend( mouseOverHex );
-                feedColorQueue( randomizeColorQueueFeeder, (int) colorLimit );
+        if ( IsKeyPressed( KEY_H ) ) {
+            currentHelpPage = 0;
+            state = GAME_STATE_SHOW_HELP;
+        }
+
+        if ( IsKeyPressed( KEY_E ) ) {
+            editorActive = !editorActive;
+        }
+
+        mouseOverHex = getHexByPoint( gw->hexGrid, gw->hexCount, GetMousePosition() );
+
+        if ( !mergeAnimation.running ) {
+
+            if ( updateGrid ) {
+                createHexGrid( gw, levels[currentLevel].centerLineQuantity, levels[currentLevel].hexRadius );
+                connectHexGrid( gw->hexGrid, gw->hexCount );
+                mouseOverHex = NULL;
+                updateGrid = false;
             }
-        }
 
-        if ( state == GAME_STATE_EDITOR ) {
-
-            if ( IsMouseButtonPressed( MOUSE_BUTTON_RIGHT ) ) {
+            if ( IsMouseButtonPressed( MOUSE_BUTTON_LEFT ) ) {
                 if ( mouseOverHex != NULL && mouseOverHex->color == HEX_BLANK_COLOR ) {
-                    mouseOverHex->color = editorDrawHex.color;
+                    mouseOverHex->color = pollColorQueue();
                     gw->score += checkAndBlend( mouseOverHex );
+                    feedColorQueue( randomizeColorQueueFeeder, (int) colorLimit );
                 }
             }
 
-            if ( IsMouseButtonPressed( MOUSE_BUTTON_MIDDLE ) ) {
-                if ( mouseOverHex != NULL ) {
-                    mouseOverHex->color = HEX_BLANK_COLOR;
-                }
-            }
+            if ( editorActive ) {
 
-            Vector2 mw = GetMouseWheelMoveV();
-            if ( mw.y > 0 ) {
-                editorSelectedColor = ( editorSelectedColor + 1 ) % editorMaxColors;
-                editorDrawHex.color = availableColors[editorSelectedColor];
-            } else if ( mw.y < 0 ) {
-                editorSelectedColor--;
-                if ( editorSelectedColor < 0 ) {
-                    editorSelectedColor = editorMaxColors - 1;
+                if ( IsMouseButtonPressed( MOUSE_BUTTON_RIGHT ) ) {
+                    if ( mouseOverHex != NULL && mouseOverHex->color == HEX_BLANK_COLOR ) {
+                        mouseOverHex->color = editorDrawHex.color;
+                        gw->score += checkAndBlend( mouseOverHex );
+                    }
                 }
-                editorDrawHex.color = availableColors[editorSelectedColor];
+
+                if ( IsMouseButtonPressed( MOUSE_BUTTON_MIDDLE ) ) {
+                    if ( mouseOverHex != NULL ) {
+                        mouseOverHex->color = HEX_BLANK_COLOR;
+                    }
+                }
+
+                Vector2 mw = GetMouseWheelMoveV();
+                if ( mw.y > 0 ) {
+                    editorSelectedColor = ( editorSelectedColor + 1 ) % editorMaxColors;
+                    editorDrawHex.color = availableColors[editorSelectedColor];
+                } else if ( mw.y < 0 ) {
+                    editorSelectedColor--;
+                    if ( editorSelectedColor < 0 ) {
+                        editorSelectedColor = editorMaxColors - 1;
+                    }
+                    editorDrawHex.color = availableColors[editorSelectedColor];
+                }
+
             }
 
         }
 
+        mergeAnimation.update( &mergeAnimation, delta );
+
     }
-
-    mergeAnimation.update( &mergeAnimation, delta );
-
+    
 }
 
 /**
@@ -248,19 +265,26 @@ void drawGameWorld( GameWorld *gw ) {
     BeginDrawing();
     ClearBackground( BLACK );
 
-    drawHexGrid( gw->hexGrid, gw->hexCount, showHexConnections );
+    if ( state == GAME_STATE_LEVEL_TRANSITION ) {
+        levelTransitionAnimation.draw( &levelTransitionAnimation );
+    } else if ( state == GAME_STATE_SHOW_HELP ) {
+        drawHelpHud( gw );
+    } else if ( state == GAME_STATE_PLAYING ) {
 
-    if ( !mergeAnimation.running ) {
-        if ( mouseOverHex != NULL ) {
-            mouseOverDrawHex.center = mouseOverHex->center;
-            mouseOverDrawHex.radius = mouseOverHex->radius;
-            drawHexHighlight( &mouseOverDrawHex );
+        drawHexGrid( gw->hexGrid, gw->hexCount, showHexConnections );
+
+        if ( !mergeAnimation.running ) {
+            if ( mouseOverHex != NULL ) {
+                mouseOverDrawHex.center = mouseOverHex->center;
+                mouseOverDrawHex.radius = mouseOverHex->radius;
+                drawHexHighlight( &mouseOverDrawHex );
+            }
         }
-    }
 
-    mergeAnimation.draw( &mergeAnimation );
-    
-    drawHud( gw );
+        mergeAnimation.draw( &mergeAnimation );
+        drawPlayingHud( gw );
+
+    }
 
     EndDrawing();
 
@@ -473,7 +497,7 @@ static unsigned int mostFrequentColor( unsigned int *colors, int count ) {
 
 }
 
-static void drawHud( GameWorld *gw ) {
+static void drawPlayingHud( GameWorld *gw ) {
 
     const int fontSize = 30;
     int spacing = 20;
@@ -521,7 +545,7 @@ static void drawHud( GameWorld *gw ) {
         }
     }
 
-    if ( state == GAME_STATE_EDITOR ) {
+    if ( editorActive ) {
         const char *editorLabel = "Editor Mode!";
         DrawTextEx( rm->font, editorLabel, (Vector2) { 15, GetScreenHeight() - 45 }, fontSize, 0.0f, RAYWHITE );
         Vector2 mEditorLabel = MeasureTextEx( rm->font, editorLabel, fontSize, 0.0f );
@@ -531,14 +555,21 @@ static void drawHud( GameWorld *gw ) {
         drawHexHighlight( &editorDrawHex );
     }
 
-    if ( state == GAME_STATE_SHOW_HELP_1 ) {
-        DrawTexture( rm->howToMergePSTexture, 0, 0, WHITE );
-    }
-
-    if ( state == GAME_STATE_SHOW_HELP_2 ) {
-        DrawTexture( rm->howToMergePSTTexture, 0, 0, WHITE );
-    }
-
     //DrawFPS( 10, GetScreenHeight() - 25 );
+
+}
+
+static void drawHelpHud( GameWorld *gw ) {
+
+    switch ( currentHelpPage ) {
+        case 0:
+            DrawTexture( rm->howToMergePSTexture, 0, 0, WHITE );
+            break;
+        case 1:
+            DrawTexture( rm->howToMergePSTTexture, 0, 0, WHITE );
+            break;
+        default:
+            break;
+    }
 
 }

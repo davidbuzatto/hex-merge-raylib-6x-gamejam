@@ -26,7 +26,7 @@ void initHex( Hex *h, Vector2 center, float radius ) {
 
 void drawHex( Hex *h ) {
     DrawPoly( h->center, 6, h->radius, 90.0f, GetColor( h->color ) );
-    int strokeColor = ColorToInt( DARKGRAY );
+    unsigned int strokeColor = ColorToInt( DARKGRAY );
     if ( h->color != HEX_BLANK_COLOR ) {
         strokeColor = h->color;
     }

@@ -5,7 +5,7 @@
 #define MAX_HEX_GRID_COUNT 1500
 #define COLOR_QUEUE_CAPACITY 5
 
-#define HEX_BLANK_COLOR   0x000000ff
+#define HEX_BLANK_COLOR   0x00000000
 
 // final color palette
 // primary
