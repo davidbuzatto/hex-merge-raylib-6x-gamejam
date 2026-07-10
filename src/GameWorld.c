@@ -150,6 +150,8 @@ static bool musicEnabled = true;
  */
 GameWorld *createGameWorld( void ) {
 
+    SetExitKey( KEY_NULL );
+
     GameWorld *gw = (GameWorld*) malloc( sizeof( GameWorld ) );
 
     currentLevel = clampInt( currentLevel, 0, levelQuantity - 1 );
@@ -219,7 +221,7 @@ void updateGameWorld( GameWorld *gw, float delta ) {
 
     } else if ( state == GAME_STATE_SHOW_HELP ) {
 
-        if ( IsKeyPressed( KEY_H ) ) {
+        if ( IsKeyPressed( KEY_H ) || IsKeyPressed( KEY_ESCAPE ) ) {
             state = GAME_STATE_PLAYING;
         }
         if ( IsKeyPressed( KEY_LEFT ) ) {
